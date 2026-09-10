@@ -58,7 +58,6 @@ import { SatoraInvalidOptionsError } from './errors.js'
 
 /**
  * @typedef {Object} SatoraRefundOptions
- * @property {'swap-back' | 'direct'} [settlement] - For an EVM-sourced swap: refund as the original token via DEX ('swap-back', the default) or as WBTC ('direct').
  * @property {boolean} [manual] - For an EVM-sourced swap: use the timelock-based refund (user pays gas) instead of the gasless collaborative one. Ignored for Arkade/Bitcoin sources, whose other fields are forwarded as {@link RefundOptions}.
  */
 
@@ -328,11 +327,11 @@ export default class SatoraProtocol extends SwidgeProtocol {
     }
     requireFromAmount(options, 'Lightning -> EVM')
 
-    const { response } = await client.createLightningToEvmSwapGeneric({
+    const { response } = await client.createLightningToEvmSwap({
       targetAddress: recipient,
       evmChainId: Number(targetChain),
       tokenAddress: target.tokenId,
-      amountIn: Number(options.fromTokenAmount)
+      sourceAmount: Number(options.fromTokenAmount)
     })
 
     const id = response.id
@@ -427,7 +426,7 @@ export default class SatoraProtocol extends SwidgeProtocol {
       throw new SatoraInvalidOptionsError('EVM -> Lightning swidge requires an EvmSigner account (with .address)')
     }
 
-    const { response } = await client.createEvmToLightningSwapGeneric({
+    const { response } = await client.createEvmToLightningSwap({
       evmChainId: Number(source.chain),
       tokenAddress: source.tokenId,
       userAddress: account.address,
@@ -552,14 +551,14 @@ export default class SatoraProtocol extends SwidgeProtocol {
    * - **EVM source** (EVM -> Arkade/Bitcoin/Lightning): reclaims the EVM HTLC
    *   with the account's {@link EvmSigner}. Collaborative (gasless, no timelock
    *   wait) by default; pass `options.manual` for the timelock-based refund.
-   *   `options.settlement` is 'swap-back' (return the original token, default)
-   *   or 'direct' (WBTC).
+   *   The refund pays out the BTC-pegged HTLC token (tBTC/WBTC) to the
+   *   depositor.
    * - **Arkade/Bitcoin source**: reclaims to the account's address via the
    *   satora refund (`options` are forwarded, e.g. an on-chain `feeRateSatPerVb`).
    * - **Lightning source**: cannot be refunded — the unpaid invoice expires.
    *
    * @param {string} id - The swap id.
-   * @param {SatoraRefundOptions} [options] - Refund options (`settlement`/`manual` for EVM sources; SDK {@link RefundOptions} fields are forwarded for Arkade/Bitcoin sources).
+   * @param {SatoraRefundOptions} [options] - Refund options (`manual` for EVM sources; SDK {@link RefundOptions} fields are forwarded for Arkade/Bitcoin sources).
    * @returns {Promise<SwidgeStatusResult & { id: string, message?: string }>} The 'refunded' status and transactions.
    * @throws {import('./errors.js').SatoraInvalidOptionsError} If no (suitable) account is bound, or the direction cannot be refunded.
    * @throws {Error} If the swap cannot be refunded.
@@ -579,10 +578,9 @@ export default class SatoraProtocol extends SwidgeProtocol {
       if (!account.address) {
         throw new SatoraInvalidOptionsError('refund of an EVM-sourced swap requires an EvmSigner account (with .address)')
       }
-      const settlement = options.settlement ?? 'swap-back'
       const { txHash } = options.manual
-        ? await client.refundEvmWithSigner(id, account, settlement)
-        : await client.collabRefundEvmWithSigner(id, account, settlement)
+        ? await client.refundEvmWithSigner(id, account)
+        : await client.collabRefundEvmWithSigner(id, account)
 
       const after = await client.getSwap(id, { updateStorage: true })
       const transactions = toSwidgeTransactions(after)
@@ -754,13 +752,14 @@ function requireFromAmount (options, direction) {
 /**
  * Resolves a Lightning destination from `options.recipient` into the shape the
  * SDK expects: a BOLT11 invoice (amount carried by the invoice), a lightning
- * address, or an LNURL. The latter two carry no amount, so the payout comes
- * from the destination amount `toTokenAmount` (in sats) — never from
- * `fromTokenAmount`, which is the source token amount for the swap.
+ * address, or an LNURL. The latter two carry no amount, so the payout is
+ * pinned by the destination amount `toTokenAmount` (sats the recipient
+ * receives, `targetAmountSats`) — never by `fromTokenAmount`, which is the
+ * source token amount for the swap.
  *
  * @param {string} recipient - The BOLT11 invoice, lightning address, or LNURL.
  * @param {SwidgeOptions} options - The swidge options.
- * @returns {{ lightningInvoice: string } | { lightningAddress: string, amountSats: number } | { lnurl: string, amountSats: number }}
+ * @returns {{ lightningInvoice: string } | { lightningAddress: string, targetAmountSats: number } | { lnurl: string, targetAmountSats: number }}
  */
 function lightningDestination (recipient, options) {
   if (/^ln(bc|tb|bcrt)/i.test(recipient)) {
@@ -772,10 +771,10 @@ function lightningDestination (recipient, options) {
       'a lightning address / LNURL destination requires the payout amount in sats (toTokenAmount)'
     )
   }
-  const amountSats = Number(options.toTokenAmount)
+  const targetAmountSats = Number(options.toTokenAmount)
 
-  if (/^lnurl/i.test(recipient)) return { lnurl: recipient, amountSats }
-  return { lightningAddress: recipient, amountSats }
+  if (/^lnurl/i.test(recipient)) return { lnurl: recipient, targetAmountSats }
+  return { lightningAddress: recipient, targetAmountSats }
 }
 
 /**

@@ -152,7 +152,7 @@ await satora.refundSwidge(result.id)    // direction-aware
 
 - **EVM source** — reclaims the EVM HTLC with the account's `EvmSigner`,
   collaborative/gasless by default (no timelock wait), or `{ manual: true }`
-  for the timelock refund; `{ settlement: 'swap-back' | 'direct' }`.
+  for the timelock refund. Pays out the BTC-pegged HTLC token (tBTC/WBTC).
 - **Arkade / Bitcoin source** — reclaims to the account's address.
 - **Lightning source** — throws; the unpaid invoice simply expires.
 
