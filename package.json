@@ -29,7 +29,7 @@
     ]
   },
   "dependencies": {
-    "@satora/swap": "^0.0.5",
+    "@satora/swap": "^1.4.0",
     "@tetherto/wdk-wallet": "^1.0.0-beta.14",
     "bare-node-runtime": "^1.5.0"
   },
