@@ -1,4 +1,3 @@
-export type SwidgeSupportedToken = import('@tetherto/wdk-wallet/protocols').SwidgeSupportedToken;
 /**
  * Builds a chain-qualified WDK token identifier.
  *
@@ -6,7 +5,7 @@ export type SwidgeSupportedToken = import('@tetherto/wdk-wallet/protocols').Swid
  * @param {string} tokenId - The satora token id ('btc' or a contract address).
  * @returns {string} The `chain:tokenId` identifier.
  */
-export declare function composeTokenId(chain: string | number, tokenId: string): string;
+export function composeTokenId(chain: string | number, tokenId: string): string;
 /**
  * Splits a chain-qualified WDK token identifier into its parts. If the
  * identifier is not chain-qualified, `chain` is undefined.
@@ -14,7 +13,7 @@ export declare function composeTokenId(chain: string | number, tokenId: string):
  * @param {string} token - The token identifier (`chain:tokenId` or `tokenId`).
  * @returns {{ chain: string | undefined, tokenId: string }} The parts.
  */
-export declare function parseTokenId(token: string): {
+export function parseTokenId(token: string): {
     chain: string | undefined;
     tokenId: string;
 };
@@ -32,10 +31,11 @@ export declare function parseTokenId(token: string): {
  * @param {string} info.name - The token's full name.
  * @returns {SwidgeSupportedToken} The WDK supported-token descriptor.
  */
-export declare function toSupportedToken(info: {
+export function toSupportedToken(info: {
     token_id: string;
     chain: string | number;
     symbol: string;
     decimals: number;
     name: string;
 }): SwidgeSupportedToken;
+export type SwidgeSupportedToken = import("@tetherto/wdk-wallet/protocols").SwidgeSupportedToken;
