@@ -187,7 +187,6 @@ Commands:
   refund <swap-id>  Reclaim an EVM-sourced swap that cannot complete
                       --chain <id>            EVM chain (default 42161)
                       --manual                timelock refund (default: gasless collaborative)
-                      --settlement <mode>     swap-back (default) or direct (WBTC)
 
 The EVM wallet needs the source token plus a little native gas.
 Config comes from examples/.env (copy from examples/.env.example).`)
@@ -267,7 +266,7 @@ async function main () {
   if (command === 'refund') {
     const swapId = argv[1] && !argv[1].startsWith('--') ? argv[1] : undefined
     if (!swapId) {
-      console.error('refund requires a swap id: refund <swap-id> [--chain <id>] [--manual] [--settlement swap-back|direct]')
+      console.error('refund requires a swap id: refund <swap-id> [--chain <id>] [--manual]')
       process.exit(1)
     }
 
@@ -277,8 +276,7 @@ async function main () {
 
     console.log(`Refunding swap ${swapId} to ${signer.address} ...`)
     printResult(await protocol.refundSwidge(swapId, {
-      ...(flags.manual ? { manual: true } : {}),
-      ...(typeof flags.settlement === 'string' ? { settlement: flags.settlement } : {})
+      ...(flags.manual ? { manual: true } : {})
     }))
 
     process.exit(0)

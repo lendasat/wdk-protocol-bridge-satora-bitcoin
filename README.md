@@ -1,6 +1,6 @@
 # @satora/wdk-protocol-swidge-satora
 
-[![build](https://github.com/satoraHQ/wdk-protocol-bridge-satora-bitcoin/actions/workflows/build.yml/badge.svg)](https://github.com/satoraHQ/wdk-protocol-bridge-satora-bitcoin/actions/workflows/build.yml)
+[![build](https://github.com/satoraHQ/wdk-protocol-swidge-satora/actions/workflows/build.yml/badge.svg)](https://github.com/satoraHQ/wdk-protocol-swidge-satora/actions/workflows/build.yml)
 [![Built with WDK](assets/built-with-wdk.png)](https://github.com/tetherto/wdk)
 
 A [WDK](https://github.com/tetherto/wdk) swidge protocol that performs
@@ -152,7 +152,7 @@ await satora.refundSwidge(result.id)    // direction-aware
 
 - **EVM source** — reclaims the EVM HTLC with the account's `EvmSigner`,
   collaborative/gasless by default (no timelock wait), or `{ manual: true }`
-  for the timelock refund; `{ settlement: 'swap-back' | 'direct' }`.
+  for the timelock refund. Pays out the BTC-pegged HTLC token (tBTC/WBTC).
 - **Arkade / Bitcoin source** — reclaims to the account's address.
 - **Lightning source** — throws; the unpaid invoice simply expires.
 
